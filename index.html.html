@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Regalería — Editable</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --cream: #fdf6ee;
+      --blush: #f0c4b0;
+      --rose: #c9756c;
+      --wine: #7a2d3b;
+      --brown: #3e1f1f;
+      --gold: #c89b5f;
+      --light: #fef9f5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--brown);
+      cursor: default;
+    }
+
+    /* ── EDIT MODE ── */
+    .edit-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: var(--wine);
+      color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 24px;
+      font-size: 13px;
+      transform: translateY(-100%);
+      transition: transform .3s ease;
+    }
+    .edit-bar.visible { transform: translateY(0); }
+    .edit-bar button {
+      background: var(--gold); color: var(--brown);
+      border: none; padding: 6px 16px; border-radius: 20px;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      cursor: pointer; font-size: 13px;
+    }
+    .edit-bar .tip { opacity: .8; }
+
+    [contenteditable="true"] {
+      outline: 2px dashed var(--rose);
+      outline-offset: 3px;
+      border-radius: 4px;
+      cursor: text;
+    }
+
+    .edit-toggle {
+      position: fixed; bottom: 28px; right: 28px; z-index: 9998;
+      background: var(--wine); color: #fff;
+      border: none; border-radius: 50px;
+      padding: 12px 22px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(122,45,59,.35);
+      transition: all .2s;
+    }
+    .edit-toggle:hover { background: var(--rose); transform: scale(1.04); }
+
+    /* ── HERO ── */
+    header {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fdf0e8 0%, #f7ddd3 50%, #eedcd2 100%);
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 70% 40%, rgba(201,117,108,.12) 0%, transparent 70%);
+    }
+    .blob {
+      position: absolute; border-radius: 50%;
+      background: var(--blush); opacity: .35; filter: blur(60px);
+    }
+    .blob1 { width: 400px; height: 400px; top: -100px; right: -80px; }
+    .blob2 { width: 300px; height: 300px; bottom: 60px; left: -60px; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 60px;
+      position: relative; z-index: 2;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-style: italic;
+      color: var(--wine);
+      letter-spacing: -0.5px;
+    }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      text-decoration: none; color: var(--brown);
+      font-size: 14px; font-weight: 500; opacity: .75;
+      transition: opacity .2s;
+    }
+    .nav-links a:hover { opacity: 1; }
+
+    .hero-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; text-align: center;
+      padding: 40px 20px; position: relative; z-index: 2;
+    }
+    .hero-tag {
+      font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--rose); font-weight: 500; margin-bottom: 20px;
+      animation: fadeUp .8s .1s both;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(48px, 8vw, 96px);
+      line-height: 1.05; color: var(--wine);
+      margin-bottom: 24px;
+      animation: fadeUp .8s .2s both;
+    }
+    .hero-title em { font-style: italic; color: var(--rose); }
+    .hero-sub {
+      max-width: 480px; font-size: 16px; line-height: 1.7;
+      color: var(--brown); opacity: .75;
+      animation: fadeUp .8s .35s both;
+    }
+    .hero-cta {
+      margin-top: 40px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp .8s .5s both;
+    }
+    .btn-primary {
+      background: var(--wine); color: #fff;
+      padding: 14px 34px; border-radius: 50px;
+      text-decoration: none; font-weight: 500; font-size: 15px;
+      transition: background .2s, transform .2s;
+    }
+    .btn-primary:hover { background: var(--rose); transform: translateY(-2px); }
+    .btn-outline {
+      border: 2px solid var(--wine); color: var(--wine);
+      padding: 14px 34px; border-radius: 50px;
+      text-decoration: none; font-weight: 500; font-size: 15px;
+      transition: all .2s;
+    }
+    .btn-outline:hover { background: var(--wine); color: #fff; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION SHARED ── */
+    section { padding: 90px 60px; }
+    .section-label {
+      font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--rose); font-weight: 600; margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(30px, 4vw, 48px);
+      color: var(--wine); margin-bottom: 16px; line-height: 1.2;
+    }
+    .section-sub {
+      font-size: 15px; line-height: 1.8; opacity: .7;
+      max-width: 520px;
+    }
+
+    /* ── ABOUT ── */
+    #about {
+      background: var(--light);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .about-img {
+      aspect-ratio: 4/5; border-radius: 24px;
+      background: linear-gradient(160deg, var(--blush), var(--rose));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 80px; position: relative; overflow: hidden;
+    }
+    .about-img::after {
+      content: ''; position: absolute;
+      inset: 0; background: linear-gradient(to top, rgba(122,45,59,.3), transparent);
+    }
+
+    /* ── PRODUCTS ── */
+    #productos { background: var(--cream); }
+    .products-header { text-align: center; margin-bottom: 56px; }
+    .products-header .section-sub { margin: 0 auto; }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 28px;
+    }
+    .product-card {
+      background: #fff; border-radius: 20px;
+      overflow: hidden; box-shadow: 0 2px 20px rgba(62,31,31,.07);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(62,31,31,.13); }
+    .product-img {
+      aspect-ratio: 1/1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 56px; position: relative;
+    }
+    .product-img.bg1 { background: linear-gradient(135deg,#fde8e0,#f7cfc5); }
+    .product-img.bg2 { background: linear-gradient(135deg,#e8f0fd,#c5d4f7); }
+    .product-img.bg3 { background: linear-gradient(135deg,#e8fde8,#c5f0c5); }
+    .product-img.bg4 { background: linear-gradient(135deg,#fdf8e0,#f7efc5); }
+    .product-img.bg5 { background: linear-gradient(135deg,#f5e0fd,#e5c5f7); }
+    .product-img.bg6 { background: linear-gradient(135deg,#fde0e8,#f7c5cf); }
+    /* Image upload overlay */
+    .img-upload-btn {
+      display: none;
+      position: absolute; bottom: 8px; right: 8px;
+      background: rgba(122,45,59,.8); color: #fff;
+      border: none; border-radius: 8px; padding: 6px 10px;
+      font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    }
+    .edit-mode .product-img:hover .img-upload-btn { display: block; }
+    .product-img input[type=file] { display: none; }
+    .product-info { padding: 20px; }
+    .product-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; color: var(--wine); margin-bottom: 6px;
+    }
+    .product-desc { font-size: 13px; opacity: .65; line-height: 1.6; margin-bottom: 14px; }
+    .product-price {
+      font-size: 18px; font-weight: 700; color: var(--rose);
+    }
+
+    /* ADD PRODUCT BTN */
+    .add-product-btn {
+      display: none;
+      background: transparent; border: 2px dashed var(--rose);
+      border-radius: 20px; cursor: pointer;
+      aspect-ratio: 1/1.2; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px;
+      color: var(--rose); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; transition: background .2s;
+    }
+    .add-product-btn:hover { background: rgba(201,117,108,.08); }
+    .edit-mode .add-product-btn { display: flex; }
+
+    /* ── GALLERY ── */
+    #galeria { background: var(--light); }
+    .gallery-header { text-align: center; margin-bottom: 48px; }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto;
+      gap: 16px;
+    }
+    .gallery-item {
+      border-radius: 16px; overflow: hidden;
+      aspect-ratio: 1/1;
+      background: linear-gradient(135deg, var(--blush), var(--rose));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; cursor: pointer;
+      transition: transform .2s;
+      position: relative;
+    }
+    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item:first-child { grid-column: span 2; grid-row: span 2; aspect-ratio: unset; }
+    .gallery-item img { width:100%; height:100%; object-fit:cover; }
+    .gallery-upload-btn {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(122,45,59,.5); color: #fff;
+      border: none; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; cursor: pointer; align-items: center; justify-content: center;
+    }
+    .edit-mode .gallery-item:hover .gallery-upload-btn { display: flex; }
+
+    /* ── REDES ── */
+    #redes {
+      background: var(--wine);
+      color: #fff; text-align: center;
+    }
+    #redes .section-label { color: var(--blush); }
+    #redes .section-title { color: #fff; }
+    #redes .section-sub { color: rgba(255,255,255,.65); margin: 0 auto 48px; }
+    .social-grid {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;
+    }
+    .social-card {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 20px; padding: 28px 36px;
+      text-decoration: none; color: #fff;
+      transition: background .2s, transform .2s;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      min-width: 160px;
+    }
+    .social-card:hover { background: rgba(255,255,255,.2); transform: translateY(-4px); }
+    .social-icon { font-size: 36px; }
+    .social-name { font-size: 13px; font-weight: 500; opacity: .8; }
+    .social-handle { font-size: 15px; font-weight: 600; }
+
+    /* ── CONTACT ── */
+    #contacto {
+      background: var(--cream);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+    }
+    .contact-info { padding-top: 8px; }
+    .contact-detail {
+      display: flex; align-items: flex-start; gap: 16px;
+      margin-bottom: 28px;
+    }
+    .contact-icon { font-size: 24px; margin-top: 2px; }
+    .contact-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: .5; margin-bottom: 4px; }
+    .contact-value { font-size: 15px; font-weight: 500; }
+    .contact-form { display: flex; flex-direction: column; gap: 16px; }
+    .contact-form input,
+    .contact-form textarea {
+      background: #fff; border: 1.5px solid rgba(62,31,31,.12);
+      border-radius: 12px; padding: 14px 18px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--brown);
+      transition: border-color .2s;
+    }
+    .contact-form input:focus,
+    .contact-form textarea:focus { outline: none; border-color: var(--rose); }
+    .contact-form textarea { min-height: 120px; resize: vertical; }
+    .contact-form button {
+      background: var(--wine); color: #fff;
+      border: none; border-radius: 50px; padding: 14px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: background .2s;
+    }
+    .contact-form button:hover { background: var(--rose); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--brown); color: rgba(255,255,255,.5);
+      text-align: center; padding: 32px;
+      font-size: 13px;
+    }
+    footer strong { color: rgba(255,255,255,.8); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      section { padding: 60px 24px; }
+      #about, #contacto { grid-template-columns: 1fr; gap: 40px; }
+      .gallery-grid { grid-template-columns: repeat(2,1fr); }
+      .gallery-item:first-child { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- EDIT BAR -->
+<div class="edit-bar" id="editBar">
+  <span class="tip">✏️ Modo edición activo — hacé clic en cualquier texto para modificarlo</span>
+  <button onclick="saveContent()">💾 Guardar cambios</button>
+</div>
+
+<!-- TOGGLE EDIT -->
+<button class="edit-toggle" id="editToggle" onclick="toggleEdit()">✏️ Editar página</button>
+
+<!-- NAV + HERO -->
+<header>
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+  <nav>
+    <div class="logo" id="logo" contenteditable="false">Regalería</div>
+    <div class="nav-links">
+      <a href="#about">Nosotros</a>
+      <a href="#productos">Productos</a>
+      <a href="#galeria">Galería</a>
+      <a href="#redes">Redes</a>
+      <a href="#contacto">Contacto</a>
+    </div>
+  </nav>
+  <div class="hero-body">
+    <p class="hero-tag" id="heroTag" contenteditable="false">Regalos con alma · Desde 2024</p>
+    <h1 class="hero-title">
+      El regalo<br>
+      <em id="heroEm" contenteditable="false">perfecto</em><br>
+      te espera
+    </h1>
+    <p class="hero-sub" id="heroSub" contenteditable="false">Descubrí nuestra selección de regalos únicos, hechos con amor para cada ocasión especial.</p>
+    <div class="hero-cta">
+      <a href="#productos" class="btn-primary">Ver productos</a>
+      <a href="#contacto" class="btn-outline">Contactanos</a>
+    </div>
+  </div>
+</header>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-img">🎁</div>
+  <div class="about-text">
+    <p class="section-label" contenteditable="false">Nuestra historia</p>
+    <h2 class="section-title" contenteditable="false">Regalos que hablan por vos</h2>
+    <p class="section-sub" contenteditable="false">Somos una regalería con corazón. Cada producto que elegimos está pensado para generar emociones, crear recuerdos y hacer sentir especial a quien recibe el regalo.</p>
+    <p class="section-sub" style="margin-top:16px" contenteditable="false">Trabajamos con artesanos locales y marcas cuidadosamente seleccionadas para ofrecerte lo mejor en cada ocasión.</p>
+  </div>
+</section>
+
+<!-- PRODUCTOS -->
+<section id="productos">
+  <div class="products-header">
+    <p class="section-label" contenteditable="false">Catálogo</p>
+    <h2 class="section-title" contenteditable="false">Nuestros productos</h2>
+    <p class="section-sub" contenteditable="false">Encontrá el regalo ideal para cada momento y persona especial.</p>
+  </div>
+  <div class="products-grid" id="productsGrid">
+
+    <div class="product-card">
+      <div class="product-img bg1">
+        🕯️
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Velas Aromáticas</div>
+        <div class="product-desc" contenteditable="false">Set de velas perfumadas artesanales. Ideal para regalar en cualquier ocasión.</div>
+        <div class="product-price" contenteditable="false">$3.500</div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img bg2">
+        🧸
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Peluches Premium</div>
+        <div class="product-desc" contenteditable="false">Suaves, adorables y personalizables. Un abrazo en forma de regalo.</div>
+        <div class="product-price" contenteditable="false">$5.200</div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img bg3">
+        🌿
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Kits Naturales</div>
+        <div class="product-desc" contenteditable="false">Jabones, esencias y cremas naturales en packaging premium.</div>
+        <div class="product-price" contenteditable="false">$4.800</div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img bg4">
+        ☕
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Canastas Gourmet</div>
+        <div class="product-desc" contenteditable="false">Selección de infusiones, chocolates y delicias en cesta decorada.</div>
+        <div class="product-price" contenteditable="false">$7.900</div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img bg5">
+        💌
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Cajas Sorpresa</div>
+        <div class="product-desc" contenteditable="false">Armá tu caja a medida con los productos que más te gusten.</div>
+        <div class="product-price" contenteditable="false">desde $6.000</div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img bg6">
+        🎀
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="false">Packaging Especial</div>
+        <div class="product-desc" contenteditable="false">Envolturas, moños y tarjetas personalizadas para cada regalo.</div>
+        <div class="product-price" contenteditable="false">$1.200</div>
+      </div>
+    </div>
+
+    <!-- ADD PRODUCT -->
+    <button class="add-product-btn" onclick="addProduct()">
+      <span style="font-size:32px">＋</span>
+      <span>Agregar producto</span>
+    </button>
+
+  </div>
+</section>
+
+<!-- GALERÍA -->
+<section id="galeria">
+  <div class="gallery-header">
+    <p class="section-label" contenteditable="false">Galería</p>
+    <h2 class="section-title" contenteditable="false">Inspiración y momentos</h2>
+  </div>
+  <div class="gallery-grid" id="galleryGrid">
+    <div class="gallery-item" style="background:linear-gradient(135deg,#f0c4b0,#c9756c)">
+      🎁
+      <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+      <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">
+    </div>
+    <div class="gallery-item" style="background:linear-gradient(135deg,#fde8e0,#f0c4b0)">
+      🌸
+      <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+      <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">
+    </div>
+    <div class="gallery-item" style="background:linear-gradient(135deg,#eedcd2,#c9756c)">
+      🕯️
+      <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+      <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">
+    </div>
+    <div class="gallery-item" style="background:linear-gradient(135deg,#f7ddd3,#f0c4b0)">
+      🎀
+      <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+      <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">
+    </div>
+    <div class="gallery-item" style="background:linear-gradient(135deg,#c9756c,#7a2d3b)">
+      💐
+      <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+      <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">
+    </div>
+  </div>
+</section>
+
+<!-- REDES SOCIALES -->
+<section id="redes">
+  <p class="section-label">Seguinos</p>
+  <h2 class="section-title">Encontranos en redes</h2>
+  <p class="section-sub" id="redesSub" contenteditable="false">Compartimos novedades, inspiración y promociones todos los días.</p>
+  <div class="social-grid">
+    <a class="social-card" id="igCard" href="#" target="_blank">
+      <span class="social-icon">📸</span>
+      <span class="social-name">Instagram</span>
+      <span class="social-handle" contenteditable="false">@regaleria</span>
+    </a>
+    <a class="social-card" id="fbCard" href="#" target="_blank">
+      <span class="social-icon">📘</span>
+      <span class="social-name">Facebook</span>
+      <span class="social-handle" contenteditable="false">Regalería Oficial</span>
+    </a>
+    <a class="social-card" id="waCard" href="#" target="_blank">
+      <span class="social-icon">💬</span>
+      <span class="social-name">WhatsApp</span>
+      <span class="social-handle" contenteditable="false">+54 9 XXX XXX</span>
+    </a>
+    <a class="social-card" id="ttCard" href="#" target="_blank">
+      <span class="social-icon">🎵</span>
+      <span class="social-name">TikTok</span>
+      <span class="social-handle" contenteditable="false">@regaleria</span>
+    </a>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section id="contacto">
+  <div class="contact-info">
+    <p class="section-label" contenteditable="false">Hablemos</p>
+    <h2 class="section-title" contenteditable="false">Contactanos</h2>
+    <p class="section-sub" contenteditable="false">Estamos para ayudarte a elegir el regalo ideal. No dudes en escribirnos.</p>
+
+    <div style="margin-top: 40px;">
+      <div class="contact-detail">
+        <span class="contact-icon">📍</span>
+        <div>
+          <div class="contact-label">Dirección</div>
+          <div class="contact-value" contenteditable="false">San Juan, Argentina</div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">📱</span>
+        <div>
+          <div class="contact-label">Teléfono / WhatsApp</div>
+          <div class="contact-value" contenteditable="false">+54 9 XXX XXX XXXX</div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">✉️</span>
+        <div>
+          <div class="contact-label">Email</div>
+          <div class="contact-value" contenteditable="false">hola@regaleria.com</div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">🕐</span>
+        <div>
+          <div class="contact-label">Horario</div>
+          <div class="contact-value" contenteditable="false">Lun–Vie 9–18 h · Sáb 9–13 h</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="contact-form">
+      <input type="text" placeholder="Tu nombre">
+      <input type="email" placeholder="Tu email">
+      <input type="text" placeholder="Asunto (ej: consulta sobre producto)">
+      <textarea placeholder="Tu mensaje..."></textarea>
+      <button>Enviar mensaje →</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <strong id="footerBrand" contenteditable="false">Regalería</strong> · Hecho con ❤️ · 
+  <span contenteditable="false">San Juan, Argentina · 2024</span>
+</footer>
+
+<script>
+  let editMode = false;
+
+  function toggleEdit() {
+    editMode = !editMode;
+    const body = document.body;
+    const bar = document.getElementById('editBar');
+    const btn = document.getElementById('editToggle');
+    const editables = document.querySelectorAll('[contenteditable]');
+
+    if (editMode) {
+      body.classList.add('edit-mode');
+      bar.classList.add('visible');
+      btn.textContent = '✅ Salir de edición';
+      editables.forEach(el => el.setAttribute('contenteditable', 'true'));
+    } else {
+      body.classList.remove('edit-mode');
+      bar.classList.remove('visible');
+      btn.textContent = '✏️ Editar página';
+      editables.forEach(el => el.setAttribute('contenteditable', 'false'));
+    }
+  }
+
+  function saveContent() {
+    // Collect all editable text
+    const data = {};
+    document.querySelectorAll('[contenteditable]').forEach((el, i) => {
+      if (el.id) data[el.id] = el.innerHTML;
+    });
+    localStorage.setItem('regaleriaContent', JSON.stringify(data));
+    showToast('💾 ¡Cambios guardados!');
+  }
+
+  function loadContent() {
+    const saved = localStorage.getItem('regaleriaContent');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    Object.entries(data).forEach(([id, html]) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = `
+      position:fixed;bottom:90px;right:28px;z-index:9999;
+      background:#3e1f1f;color:#fff;padding:12px 22px;
+      border-radius:50px;font-family:'DM Sans',sans-serif;font-size:14px;
+      animation:fadeUp .3s both;
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  // Product image upload
+  function triggerImgUpload(btn) {
+    btn.parentElement.querySelector('input[type=file]').click();
+  }
+  function setProductImg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const parent = input.parentElement;
+      parent.innerHTML = `<img src="${e.target.result}" alt="producto" style="width:100%;height:100%;object-fit:cover">
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Gallery image upload
+  function triggerGalleryUpload(btn) {
+    btn.parentElement.querySelector('input[type=file]').click();
+  }
+  function setGalleryImg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const parent = input.parentElement;
+      parent.innerHTML = `<img src="${e.target.result}" alt="galería" style="width:100%;height:100%;object-fit:cover">
+        <button class="gallery-upload-btn" onclick="triggerGalleryUpload(this)">📷 Cambiar foto</button>
+        <input type="file" accept="image/*" style="display:none" onchange="setGalleryImg(this)">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Add product
+  function addProduct() {
+    const grid = document.getElementById('productsGrid');
+    const addBtn = grid.querySelector('.add-product-btn');
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <div class="product-img bg1">
+        🎁
+        <button class="img-upload-btn" onclick="triggerImgUpload(this)">📷 Cambiar imagen</button>
+        <input type="file" accept="image/*" onchange="setProductImg(this)">
+      </div>
+      <div class="product-info">
+        <div class="product-name" contenteditable="true">Nuevo Producto</div>
+        <div class="product-desc" contenteditable="true">Descripción del producto...</div>
+        <div class="product-price" contenteditable="true">$0.000</div>
+      </div>`;
+    grid.insertBefore(card, addBtn);
+    showToast('✅ Producto agregado');
+  }
+
+  // Auto-load saved content on start
+  loadContent();
+</script>
+</body>
+</html>
